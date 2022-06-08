@@ -48,6 +48,7 @@ export class ProfileService {
       const followToCreate = new FollowEntity();
       followToCreate.followerId = currentUserId;
       followToCreate.followingId = user.id;
+      await this.followRepository.save(followToCreate);
     }
     return { ...user, following: true };
   }
