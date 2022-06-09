@@ -8,6 +8,8 @@ import slugify from 'slugify';
 import { ArticlesResponseInterface } from './types/articlesResponse.interface';
 import { UserEntity } from '@app/user/user.entity';
 import { arrayMaxSize } from 'class-validator';
+import { FeedInterface } from './types/feed.interface';
+import { FollowEntity } from '@app/profile/follow.entity';
 
 @Injectable()
 export class ArticleService {
@@ -16,6 +18,8 @@ export class ArticleService {
     private readonly articleRepository: Repository<ArticleEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(FollowEntity)
+    private readonly followRepository: Repository<FollowEntity>,
   ) {}
 
   async findAll(currentUserId: number, query: any): Promise<ArticlesResponseInterface> {
@@ -81,7 +85,41 @@ export class ArticleService {
     return { articles: articlesWithFavorites, articlesCount };
   }
 
-  async createArticle(currentUser, createArticleDto: CreateArticleDto): Promise<ArticleEntity> {
+  async getFeed(currentUserId: number, query: FeedInterface): Promise<ArticlesResponseInterface> {
+    const follows = await this.followRepository.find({
+      followerId: currentUserId,
+    });
+
+    if (follows.length === 0) {
+      return { articles: [], articlesCount: 0 };
+    }
+
+    const followingUserIds = follows.map((foloow) => foloow.followingId);
+    const queryBuilder = getRepository(ArticleEntity)
+      .createQueryBuilder('articles')
+      .leftJoinAndSelect('articles.author', 'author')
+      .where('articles.authorId IN (:...ids)', { ids: followingUserIds }); // :...ids - array
+    queryBuilder.orderBy('articles.createdAt', 'DESC');
+
+    const articlesCount = await queryBuilder.getCount();
+
+    if (query.limit) {
+      queryBuilder.limit(query.limit);
+    }
+
+    if (query.offset) {
+      queryBuilder.offset(query.offset);
+    }
+
+    const articles = await queryBuilder.getMany();
+
+    return { articles, articlesCount };
+  }
+
+  async createArticle(
+    currentUser: UserEntity,
+    createArticleDto: CreateArticleDto,
+  ): Promise<ArticleEntity> {
     const article = new ArticleEntity();
     Object.assign(article, createArticleDto);
 
