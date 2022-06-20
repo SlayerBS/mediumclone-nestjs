@@ -17,7 +17,9 @@ import {
 } from '@nestjs/common';
 import { ArticleEntity } from './article.entity';
 import { ArticleService } from './article.service';
+import { CommentEntity } from './comment.entity';
 import { CreateArticleDto } from './dto/createArticle.dto';
+import { CreateCommentDto } from './dto/createCommentDto';
 import { ArticleResponseInterface } from './types/articleResponse.interface';
 import { ArticlesResponseInterface } from './types/articlesResponse.interface';
 import { FeedInterface } from './types/feed.interface';
@@ -59,9 +61,11 @@ export class ArticleController {
   async createComment(
     @User('id') currentUserId: number,
     @Param('slug') slug: string,
-    @Body('comment') comment: string,
-  ): Promise<any> {
-    console.log(currentUserId, slug, comment);
+    @Body('comment') createCommentDto:CreateCommentDto,
+  ): Promise<CommentEntity> {
+    console.log(currentUserId, slug, createCommentDto.body);
+    const commentCreate = await this.articleService.createComment(currentUserId, slug, createCommentDto.body);
+    return;
   }
 
   @Get(':slug')

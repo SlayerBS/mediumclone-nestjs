@@ -10,6 +10,7 @@ import { UserEntity } from '@app/user/user.entity';
 import { arrayMaxSize } from 'class-validator';
 import { FeedInterface } from './types/feed.interface';
 import { FollowEntity } from '@app/profile/follow.entity';
+import { CommentEntity } from './comment.entity';
 
 @Injectable()
 export class ArticleService {
@@ -20,6 +21,8 @@ export class ArticleService {
     private readonly userRepository: Repository<UserEntity>,
     @InjectRepository(FollowEntity)
     private readonly followRepository: Repository<FollowEntity>,
+    @InjectRepository(CommentEntity)
+    private readonly commentRepository: Repository<FollowEntity>,
   ) {}
 
   async findAll(currentUserId: number, query: any): Promise<ArticlesResponseInterface> {
@@ -213,5 +216,25 @@ export class ArticleService {
     return (
       slugify(title, { lower: true }) + '-' + ((Math.random() * Math.pow(36, 6)) | 0).toString(36)
     );
+  }
+
+  async createComment(
+    currentUserId: number,
+    slug: string,
+    textComment: string,
+  ): Promise<CommentEntity> {
+    const article = await this.findBySlug(slug);
+
+    if (!article) {
+      throw new HttpException('Article does not exist', HttpStatus.NOT_FOUND);
+    }
+
+    const comment = new CommentEntity();
+    comment.body = textComment;
+    comment.user_id = currentUserId;
+    comment.article_id = article.id;
+    console.log('comment', comment);
+
+    return await this.commentRepository.save(comment);
   }
 }
