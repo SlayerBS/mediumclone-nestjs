@@ -54,6 +54,16 @@ export class ArticleController {
     return this.articleService.buildArticleResponse(article);
   }
 
+  @Post(':slug/comments')
+  @UseGuards(AuthGuard)
+  async createComment(
+    @User('id') currentUserId: number,
+    @Param('slug') slug: string,
+    @Body('comment') comment: string,
+  ): Promise<any> {
+    console.log(currentUserId, slug, comment);
+  }
+
   @Get(':slug')
   async getSingleArticle(@Param('slug') slug: string): Promise<ArticleResponseInterface> {
     const article = await this.articleService.findBySlug(slug);
